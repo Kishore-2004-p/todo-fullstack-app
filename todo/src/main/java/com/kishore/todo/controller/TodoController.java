@@ -2,7 +2,6 @@ package com.kishore.todo.controller;
 
 import com.kishore.todo.model.Todo;
 import com.kishore.todo.repository.TodoRepository;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,27 +17,34 @@ public class TodoController {
         this.repo = repo;
     }
 
-    // GET all todos
+    // GET ALL
     @GetMapping
     public List<Todo> getAll() {
         return repo.findAll();
     }
 
-    // CREATE todo
+    // CREATE
     @PostMapping
     public Todo create(@RequestBody Todo todo) {
         return repo.save(todo);
     }
 
-    // DELETE todo (SAFE)
+    // UPDATE  ⭐ IMPORTANT
+    @PutMapping("/{id}")
+    public Todo update(@PathVariable Long id, @RequestBody Todo updatedTodo) {
+        return repo.findById(id)
+                .map(todo -> {
+                    todo.setTitle(updatedTodo.getTitle());
+                    todo.setDescription(updatedTodo.getDescription());
+                    todo.setCompleted(updatedTodo.isCompleted());
+                    return repo.save(todo);
+                })
+                .orElseThrow(() -> new RuntimeException("Todo not found"));
+    }
+
+    // DELETE
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTodo(@PathVariable Long id) {
-
-        if (!repo.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
-
+    public void delete(@PathVariable Long id) {
         repo.deleteById(id);
-        return ResponseEntity.noContent().build();
     }
 }
