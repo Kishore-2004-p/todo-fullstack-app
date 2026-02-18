@@ -6,6 +6,10 @@ function App() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
 
+  const [editingId, setEditingId] = useState(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+
   useEffect(() => {
     loadTodos();
   }, []);
@@ -42,11 +46,37 @@ function App() {
   const toggleComplete = async (todo) => {
     const updated = { ...todo, completed: !todo.completed };
 
-    await updateTodo(todo.id, updated);
+    const res = await updateTodo(todo.id, updated);
 
     setTodos((prev) =>
-      prev.map((t) => (t.id === todo.id ? updated : t))
+      prev.map((t) => (t.id === todo.id ? res.data : t))
     );
+  };
+
+  // START EDIT
+  const startEdit = (todo) => {
+    setEditingId(todo.id);
+    setEditTitle(todo.title);
+    setEditDescription(todo.description);
+  };
+
+  // SAVE EDIT
+  const saveEdit = async (id) => {
+    const original = todos.find((t) => t.id === id);
+
+    const updated = {
+      title: editTitle,
+      description: editDescription,
+      completed: original.completed
+    };
+
+    const res = await updateTodo(id, updated);
+
+    setTodos((prev) =>
+      prev.map((t) => (t.id === id ? res.data : t))
+    );
+
+    setEditingId(null);
   };
 
   return (
@@ -58,29 +88,66 @@ function App() {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
       />
+
       <input
         placeholder="Description"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
       />
+
       <button onClick={handleAdd}>Add</button>
 
       <ul>
         {todos.map((todo) => (
-          <li key={todo.id}>
-            <span
-              onClick={() => toggleComplete(todo)}
-              style={{
-                textDecoration: todo.completed ? "line-through" : "none",
-                cursor: "pointer"
-              }}
-            >
-              {todo.title} — {todo.description}
-            </span>
+          <li key={todo.id} style={{ marginBottom: 10 }}>
+            {editingId === todo.id ? (
+              <>
+                <input
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                />
+                <input
+                  value={editDescription}
+                  onChange={(e) =>
+                    setEditDescription(e.target.value)
+                  }
+                />
+                <button onClick={() => saveEdit(todo.id)}>
+                  Save
+                </button>
+              </>
+            ) : (
+              <>
+                <div
+                  onClick={() => toggleComplete(todo)}
+                  style={{
+                    textDecoration: todo.completed
+                      ? "line-through"
+                      : "none",
+                    cursor: "pointer"
+                  }}
+                >
+                  <b>{todo.title}</b> — {todo.description}
 
-            <button onClick={() => handleDelete(todo.id)}>
-              Delete
-            </button>
+                  <div style={{ fontSize: 12, color: "gray" }}>
+                    Created:{" "}
+                    {todo.createdAt
+                      ? new Date(
+                          todo.createdAt
+                        ).toLocaleString()
+                      : ""}
+                  </div>
+                </div>
+
+                <button onClick={() => startEdit(todo)}>
+                  Edit
+                </button>
+
+                <button onClick={() => handleDelete(todo.id)}>
+                  Delete
+                </button>
+              </>
+            )}
           </li>
         ))}
       </ul>
